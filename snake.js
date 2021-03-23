@@ -5,7 +5,28 @@
 "use strict";
 // Reminder vincoli: Generazione dom tramite javascript, no librerie esterne.
 
-function addCssRule(styleNode, selector = 'body', rules = [], index = -1) {
+function addCssRule(styleNode, selector = 'body', rules = {}, index = -1) {
+    // fix upperCase to dashed upper-case version accepted by css
+    let keys = Object.keys(rules);
+    for (let key of keys) {
+        if (key.indexOf('--') === 0) continue; // non considerare le variabili css come maiuscole
+        let key_ = key.replace(/[A-Z]/g, m => "-" + m.toLowerCase());
+        if (key_ === key) continue;
+        rules[key_] = rules[key];
+        delete rules[key];
+    }
+
+    let rules_str = Object.entries(rules).map(function(kv, i) {
+        return '\n    ' + kv[0] + ': ' + kv[1] + ";";
+    }).join('; ');
+
+    // const cssElem: HTMLStyleElement = CSSEditor.getCustomCssElement($templateRoot, context, false);
+    const rawRule = '' + selector + ' {' + rules_str + '\n}\n\n';
+    if (index < 0 || !index && (index !== 0)) index = styleNode.sheet.rules.length;
+    console.warn('adding rule:', rawRule);
+    styleNode.sheet.insertRule(rawRule, index);
+}
+function addCssRule0(styleNode, selector = 'body', rules = [], index = -1) {
     // const cssElem: HTMLStyleElement = CSSEditor.getCustomCssElement($templateRoot, context, false);
     const rawRule = '' + selector + ' {\n' + rules.join(';\n   ') + '}\n\n';
     if (index < 0 || !index && (index !== 0)) index = styleNode.sheet.rules.length;
@@ -94,8 +115,6 @@ function htmlMaker() {
     const gameendimg = document.createElement('img');
     const gameendtext = document.createElement('h1');
     const gameendconfirm = document.createElement('button');
-    gameendtext.innerText = "Game Over";
-    gameendimg.setAttribute('src', 'images/game-end/lost-1.jpg');
     blackScreen.appendChild(gameendtext);
     blackScreen.appendChild(gameendimg);
     blackScreen.appendChild(gameendconfirm);
@@ -128,119 +147,134 @@ function htmlMaker() {
     const spawnables = [new SpawnableChance(Fruit, 0.55), new SpawnableChance(Deadly, 0.25),
         new SpawnableChance(Trap, 0.05), new SpawnableChance(MovementTrap, 0.15)];
 
-    // todo: passa da string-array a oggetto keyvalue
-    addCssRule(style,'*', ['box-sizing: border-box']);
-    addCssRule(style,'circle.torusSegment', ['stroke-width:20px', 'fill: transparent']);
-    addCssRule(style,'text.torusText', ['text-anchor:middle', 'font-size: 70pt', 'stroke-width:.1px']);
-    addCssRule(style, '.input-wrapper', ['position: relative', 'display: flex', 'flex-flow: column', 'text-align:center']);
-    addCssRule(style, '.input-wrapper input[type="number"]', ['padding-left: 30px', 'text-align:center']);
-    addCssRule(style, '.input-wrapper input[type="number"]::-webkit-inner-spin-button', ['flex-basis: 30px']);
-    addCssRule(style, 'section', ['display:flex', 'flex-flow: row', 'width:100%', 'align-items: center', 'align-content: flex-end', 'justify-content: space-evenly']);
-    addCssRule(style, '[appendUnit]::after', ['content: attr(appendUnit)', 'position: absolute', 'top: 50%', 'right: 10px']);
-    // rimuovi unità testuale se appare lo spin numerico
-    addCssRule(style, 'label.input-wrapper:hover::after, label.input-wrapper:focus-within::after', ['content: \'\'']);
+    addCssRule(style, '*', {boxSizing: 'border-box'});
+    addCssRule(style, 'circle.torusSegment', {strokeWidth: '20px', fill: 'transparent'});
+    addCssRule(style,'text.torusText', {textAnchor: 'middle', fontSize: '70pt', strokeWidth: '.1px'});
+    addCssRule(style, '.input-wrapper', {position: 'relative', display: 'flex', flexFlow: 'column', textAlign: 'center'});
+    addCssRule(style, '.input-wrapper input[type="number"]', {paddingLeft: '30px', textAlign: 'center'});
+    addCssRule(style, '.input-wrapper input[type="number"]::-webkit-inner-spin-button', {flexBasis: '30px'});
+    addCssRule(style, 'section', {display: 'flex', flexFlow: 'row', width: '100%', alignItems: 'center', alignContent: 'flex-end', justifyContent: 'space-evenly'});
+    addCssRule(style, '[appendUnit]::after', {content: 'attr(appendUnit)', position: 'absolute', top: '50%', right: '10px'});
 
-    addCssRule(style, '#game .left-bar, #game .right-bar', ['flex-grow: 1', 'flex-basis: 0px', 'padding: 30px', 'height: 100%']);
-    addCssRule(style, '.tableWrapper', ['display:flex', 'flex-grow:0', 'height: 100%', 'flex-grow: 0', 'flex-flow: column']);
-    addCssRule(style, 'table', ['width: auto', 'height: 100%', 'background: black', 'table-layout:fixed', 'margin: auto']);
+    addCssRule(style, 'label.input-wrapper:hover::after, label.input-wrapper:focus-within::after', {content: '""'});
 
-    addCssRule(style, 'table', ['background: white', 'display:flex', 'flex-flow: column']);
-    addCssRule(style, 'tr', ['flex-basis: 0', 'flex-grow:1', 'display:flex', 'flex-flow:row', 'height:0']);
-    addCssRule(style, 'td', ["flex-basis: 0", 'flex-grow: 1', 'border: 0.5px solid black', 'overflow:hidden', 'padding:0']);
-    addCssRule(style, 'td>img', ['width:100%', 'height:100%', 'z-index:1']); // se snake mangia una bomba li sovrappongo mostrando sopra la bomba
+    addCssRule(style, '#game .left-bar, #game .right-bar', {flexGrow: '1', flexBasis: '0px', padding: '30px', height: '100%'});
+    addCssRule(style, '.tableWrapper', {display: 'flex', flexGrow: '0', height: '100%', flexFlow: 'column'});
+    addCssRule(style, 'table', {width: 'auto', height: '100%', background: 'black', tableLayout: 'fixed', margin: 'auto'});
 
-    addCssRule(style, 'body', ['width: 100vw', 'height: 100vh', 'display: flex', 'flex-flow: column',
-        'flex-wrap: nowrap', 'padding:0', 'margin:0', 'border: solid transparent', 'border-width: 0px 10px']);
+    addCssRule(style, 'table', {background: 'white', display: 'flex', flexFlow: 'column'});
+    addCssRule(style, 'tr', {flexBasis: '0', flexGrow: '1', display: 'flex', flexFlow: 'row', height: '0'});
+    addCssRule(style, 'td', {flexBasis: '0', flexGrow: '1', border: '0.5px solid black', overflow: 'hidden', padding: '0'});
+    addCssRule(style, 'td>img', {width: '100%', height: '100%', position: 'absolute',
+     //   zIndex: 1
+    }); // se snake mangia una bomba li sovrappongo mostrando sopra la bomba
 
-    addCssRule(style, '.top, .left, .bottom, .right', ['display: flex', 'border: 0px solid red;',
-        'border-image: url(http://i.stack.imgur.com/wLdVc.png) 2 round;', 'height: 100%', 'width:100%', 'margin: auto']);
+    addCssRule(style, 'body', {width: '100vw', height: '100vh', display: 'flex', flexFlow: 'column',
+        flexWrap: 'nowrap', padding: '0', margin: '0', border: 'solid transparent', borderWidth: '0px 10px'});
+
+    addCssRule(style, '.top, .left, .bottom, .right', {display: 'flex', border: '0px solid red',
+        borderimage: 'url(http://i.stack.imgur.com/wLdVc.png) 2 round', height: '100%', width: '100%', margin: 'auto'});
+
+
 
     addCssRule(style, '.top::after, .left::after, .bottom::after, .right::after',
-        ['background: white', 'display: flex', 'flex-grow: 1', 'margin: ' + (size + 1) + 'px', 'content: \' \'', 'border-radius:50%']);
-    addCssRule(style, '.head', ['outline: 3px solid blue;']);
-    addCssRule(style, '.tail', ['border: 3px solid blue;']);
-    addCssRule(style, '#blackscreen', ['position: absolute', 'left:0', 'display: flex', 'flex-flow: column', 'background: #00000077', 'height: 100vh', 'width: 100vw', 'padding: 5vh 5vw']);
-    addCssRule(style, '#blackscreen >img', ['flex-grow: 5', 'flex-basis: 0']);
+        {background: 'white', display: 'flex', flexGrow: '1', margin: (size + 1) + 'px', content: '""', borderRadius: '50%'});
+    addCssRule(style, '#blackscreen', {position: 'absolute', left: '0', display: 'none', flexFlow: 'column',
+        background: '#00000077', height: '100vh', width: '100vw', padding: '5vh 5vw', zIndex: 2});
+    addCssRule(style, '#blackscreen >img', {flexGrow: '5', flexBasis: '0', height: '0'});
+    addCssRule(style, 'img', {pointerEvents: 'none'});
 
-    addCssRule(style, '#blackscreen >*', ['margin: auto']);
-    addCssRule(style, '#blackscreen >h1', ['font-family: sans-serif', 'font-weight: bolder', 'font-size: 70px', 'text-transform: uppercase',
-        'flex-grow: 1', 'display: flex', 'flex-basis:0',
-        'text-shadow: rgb(85 0 0) -5px 5px 0px, rgb(170 0 0) -10px 10px 0px, rgb(255 0 0) -15px 15px 0px, rgb(0 0 0 / 6%) 2px 0px 6px;']);
-    addCssRule(style, '#blackscreen.victory', ['text-shadow: rgb(0 85 0) -5px 5px 0px, rgb(0 170 0) -10px 10px 0px, rgb(0 255 0) -15px 15px 0px, rgb(0 0 0 / 6%) 2px 0px 6px']);
-    // addCssRule(style, '#blackscreen::after', ['content:""', 'flex-grow:1']);
-    addCssRule(style, '#blackscreen >button', {
-        width: '33%',
-        padding: '20px',
-        color: 'white',
-        background: 'dodgerblue',
-        border: '2px solid blue',
-        borderRadius: '9999px',
-        marginTop: '20px',
-        fontSize: '30px' });
+    addCssRule(style, '#blackscreen >*', {margin: 'auto'});
+    addCssRule(style, '#blackscreen >h1', {fontFamily: 'sans-serif', fontWeight: 'bolder', fontSize: '70px', textTransform: 'uppercase',
+        flexGrow: '1', display: 'flex', flexBasis: '0',
+    textShadow: 'rgb(85 0 0) -5px 5px 0px, rgb(170 0 0) -10px 10px 0px, rgb(255 0 0) -15px 15px 0px, rgb(0 0 0 / 6%) 2px 0px 6px'});
+    addCssRule(style, '#blackscreen.won, #blackscreen.lost', { display:'flex'});
+    addCssRule(style, '#blackscreen.won >h1', { textShadow: '#e0e0e0 2px -2px 0, #e0e0e0 -0px 1px 0, rgb(0 85 0) -5px 5px 0px, rgb(0 170 0) -10px 10px 0px, rgb(0 255 0) -15px 15px 0px, rgb(0 0 0 / 6%) 2px 0px 6px'});
+    // addCssRule(style, '#blackscreen::after', {content:'""', 'flex-grow:1'});
+    addCssRule(style, '#blackscreen >button', { width: '33%', padding: '20px', color: 'white', outline: 'none',
+        background: 'dodgerblue', border: '2px solid blue', borderRadius: '9999px', marginTop: '20px', fontSize: '30px'});
+
+    // head, tail
+    addCssRule(style, 'div.snake.head', {
+        position: 'relative',
+        animation: 'none',
+        border: '5px solid black',
+        width: '66.66666%',
+        height: '66.66666%',
+        borderRadius: 0,
+        margin: 'auto',
+        top: 'initial',
+        left: 'initial'});
+    addCssRule(style, 'div.snake.head', { transform: 'rotate(45deg)' });
+    addCssRule(style, 'div.snake.head.lr, div.snake.head.lt, div.snake.head.lb', { marginLeft: 0 });
+    addCssRule(style, 'div.snake.head.rt, div.snake.head.rl, div.snake.head.rb', { marginRight: 0 });
+    addCssRule(style, 'div.snake.head.tl, div.snake.head.tr, div.snake.head.tb', { marginTop: 0 });
+    addCssRule(style, 'div.snake.head.br, div.snake.head.bl, div.snake.head.bt', { marginBottom: 0 });
+    addCssRule(style, 'div.snake.head.bl, div.snake.head.tr, div.snake.head.lt, div.snake.head.rb', {
+        transform: 'rotate(' + (90 + 45/2) + 'deg)' });
+    addCssRule(style, 'div.snake.head.br, div.snake.head.tl, div.snake.head.lb, div.snake.head.rt', {
+        transform: 'rotate(' + (90 - 45/2) + 'deg)' });
 
 
-
-/*
-    addCssRule(style, '.left, .right', ['height: calc(50% - 4px)', 'top: calc(50% - 2px)']);
-    addCssRule(style, '.top, .bottom', ['width: calc(50% - 4px)', 'left: calc(50% - 2px)']);*/
-    /*
-     addCssRule(style, '.top.left, .top.right, .bottom.left, .bottom.right', ['height: calc(50% - 2px)']) ;//, 'width: calc(50% - 2px)']);
-    /** /addCssRule(style, '.top.left, .top.right, .bottom.left, .bottom.right', ['width: 100%', 'height:100%']);
-    /** /addCssRule(style, '.left.top', ['margin-left: calc(-50% - 2px);', 'margin-top: calc(-50% - 2px)']);
-    /** /addCssRule(style, '.left.bottom', ['margin-left: calc(-50% - 2px);', 'margin-top: calc(50% - 2px)']);
-    /** /addCssRule(style, '.right.top', ['margin-left: calc(50% - 2px);', 'margin-top: calc(-50% - 2px)']);
-    /** /addCssRule(style, '.right.bottom', ['margin-left: calc(50% - 2px);', 'margin-top: calc(-50% - 2px)']);
-    addCssRule(style, '.top.bottom', ['margin: auto', 'width:0', 'top:0']);
-    addCssRule(style, '.left.right', ['margin: auto', 'height:0']);
-    addCssRule(style, '.top.bottom', ['border-left-width: 4px']);
-    addCssRule(style, '.left.right', ['border-top-width: 4px', 'animation: animationlr 5s linear 0s infinite normal;']);
-    addCssRule(style, '.left.top', ['border-bottom-width: 4px', 'border-right-width: 4px']);
-    addCssRule(style, '.left.bottom', ['border-top-width: 4px', 'border-right-width: 4px']);
-    addCssRule(style, '.right.top', ['border-bottom-width: 4px', 'border-left-width: 4px']);
-    addCssRule(style, '.right.bottom', ['border-top-width: 4px', 'border-left-width: 4px']);*/
-    // modalità background
-    addCssRule(style, 'td', ['position: relative']);
-    addCssRule(style, '.left, .right, .top, .bottom', ['position: absolute']);
+        /*
+            addCssRule(style, '.left', '.right', {height: 'calc(50% - 4px)', 'top: 'calc(50% - 2px)'});
+            addCssRule(style, '.top', '.bottom', {width: 'calc(50% - 4px)', 'left: 'calc(50% - 2px)'});*/
+        /*
+         addCssRule(style, '.top.left', '.top.right', '.bottom.left', '.bottom.right', {height: 'calc(50% - 2px)]) ;//', 'width: 'calc(50% - 2px)'});
+        /** /addCssRule(style, '.top.left', '.top.right', '.bottom.left', '.bottom.right', {width: '100%', 'height:100%'});
+        /** /addCssRule(style, '.left.top', {margin-left: 'calc(-50% - 2px);', 'margin-top: 'calc(-50% - 2px)'});
+        /** /addCssRule(style, '.left.bottom', {margin-left: 'calc(-50% - 2px);', 'margin-top: 'calc(50% - 2px)'});
+        /** /addCssRule(style, '.right.top', {margin-left: 'calc(50% - 2px);', 'margin-top: 'calc(-50% - 2px)'});
+        /** /addCssRule(style, '.right.bottom', {margin-left: 'calc(50% - 2px);', 'margin-top: 'calc(-50% - 2px)'});
+        addCssRule(style, '.top.bottom', {margin: 'auto', 'width:0', 'top:0'});
+        addCssRule(style, '.left.right', {margin: 'auto', 'height:0'});
+        addCssRule(style, '.top.bottom', {border-left-width: '4px'});
+        addCssRule(style, '.left.right', {border-top-width: '4px', 'animation: 'animationlr 5s linear 0s infinite normal;'});
+        addCssRule(style, '.left.top', {border-bottom-width: '4px', 'border-right-width: '4px'});
+        addCssRule(style, '.left.bottom', {border-top-width: '4px', 'border-right-width: '4px'});
+        addCssRule(style, '.right.top', {border-bottom-width: '4px', 'border-left-width: '4px'});
+        addCssRule(style, '.right.bottom', {border-top-width: '4px', 'border-left-width: '4px'});*/
+        // modalità background
+        addCssRule(style, 'td', {position: 'relative'});
+    addCssRule(style, '.left, .right, .top, .bottom', {position: 'absolute'});
     // corners
-    addCssRule(style, '.left.top, .left.bottom, .right.top, .right.bottom', [
-        // 'width: 100%', 'height: 100%',
-        'width: calc(100% + ' + size + 'px + 1.15px)',
-        'height: calc(100% + ' + size + 'px + 1.15px)',
-        'transform: rotate(22.5deg)',
-        'background-image:' +
-        makeCssConicGradient(['red', 'black'], [90/2, 90/2], [0, 0]), 'border-radius: 50%']);
-    addCssRule(style, '.left.top, .left.bottom', ['left: calc(-100% + ' + size + 'px - 1.15px)']);
-    addCssRule(style, '.right.top, .right.bottom', ['left: calc(50% - ' + size/2 + 'px)']);
-    addCssRule(style, '.top.left, .top.right', ['top: calc(-100% + ' + size + 'px - 1.15px)']); // 0.65 = 0.5 cell border + unknown addition
-    addCssRule(style, '.bottom.left, .bottom.right', ['top: calc(50% - ' + size/2 + 'px)']);
-
+    addCssRule(style, '.left.top, .left.bottom, .right.top, .right.bottom', {
+        // 'width: '100%', 'height: '100%,
+        width: 'calc(100% + ' + size + 'px + 1.15px)',
+        height: 'calc(100% + ' + size + 'px + 1.15px)',
+    transform: 'rotate(22.5deg)',
+    backgroundImage: makeCssConicGradient(['red', 'black'], [90/2, 90/2], [0, 0]), borderRadius: '50%'});
+    addCssRule(style, '.left.top, .left.bottom', {left: 'calc(-100% + ' + size + 'px - 1.15px)'});
+    addCssRule(style, '.right.top, .right.bottom', {left: 'calc(50% - ' + size/2 + 'px)'});
+    addCssRule(style, '.top.left, .top.right', {top: 'calc(-100% + ' + size + 'px - 1.15px)'}); // 0.65 = 0.5 cell border + unknown addition
+    addCssRule(style, '.bottom.left, .bottom.right', {top: 'calc(50% - ' + size/2 + 'px)'});
     addCssRule(style, '.lb, .tl, .rt, .br', // clockwise angoli interni
-        ['animation: rotateclock ' + animationspeed + 's linear 0s infinite normal']); // rotazione per match colori or: scaleX(-1)
-    addCssRule(style, '.lt, .tr, .rb, .bl', // '.top.left, .bottom.right',
-        ['animation: rotateclock ' + animationspeed + 's linear 0s infinite reverse']); // rotazione per match colori or: scaleX(-1)
+        {animation: 'rotateclock ' + animationspeed + 's linear 0s infinite normal'}); // rotazione per match colori or: 'scaleX(-1)
+    addCssRule(style, '.lt, .tr, .rb, .bl', // .top.left, .bottom.right,
+{animation: 'rotateclock ' + animationspeed + 's linear 0s infinite reverse'}); // rotazione per match colori or: 'scaleX(-1)
     // edges
-    addCssRule(style, '.left.right, .rr, .ll', ['width: 400%', 'height: ' + size + 'px', 'top: calc(50% - ' + size/2 + 'px)', 'left: calc(-150% + ' + size*3/4 + 'px)',
-        'background: repeating-linear-gradient(90deg, black, black ' + 100 / multiplierSize / 2 + '%, red ' + 100 / multiplierSize / 2 + '%, red ' + 100 / multiplierSize + '%)']);
-    addCssRule(style, '.top.bottom, .tt, .bb', ['width: ' + size + 'px', 'height: 400%', 'left: calc(50% - ' + size/2 + 'px)', 'top: calc(-150% - ' + size*3/4 + 'px)',
-        'background: repeating-linear-gradient(0deg, black, black ' + 100 / multiplierSize / 2 + '%, red ' + 100 / multiplierSize / 2 + '%, red ' + 100 / multiplierSize + '%)']);
+    addCssRule(style, '.left.right, .rr, .ll', {width: '400%', height: size + 'px', top: 'calc(50% - ' + size/2 + 'px)', left: 'calc(-150% + ' + size*3/4 + 'px)',
+    background: 'repeating-linear-gradient(90deg, black, black ' + (100 / multiplierSize / 2) + '%, red ' + (100 / multiplierSize / 2) + '%, red ' + 100 / multiplierSize + '%)'});
+    addCssRule(style, '.top.bottom, .tt, .bb', {width: size + 'px', height: '400%', left: 'calc(50% - ' + size/2 + 'px)', top: 'calc(-150% - ' + size*3/4 + 'px)',
+    background: 'repeating-linear-gradient(0deg, black, black ' + (100 / multiplierSize / 2) + '%, red ' + (100 / multiplierSize / 2) + '%, red ' + 100 / multiplierSize + '%)'});
 
-    // addCssRule(style, '.right.bottom', ['border-top-width: ' + size + 'px', 'border-left-width: ' + size + 'px']);
+    // addCssRule(style, '.right.bottom', {border-top-width: ' + size + 'px, 'border-left-width: ' + size + 'px'});
     const cellsize = size * 3;
-    addCssRule(style, 'td', ['min-width: ' + cellsize + 'px', 'min-height: ' + cellsize + 'px', 'max-width: ' + cellsize + 'px', 'max-height:' + cellsize + 'px', 'flex-grow: 0']);
-    addCssRule(style, 'tr', ['min-height: ' + cellsize + 'px', 'max-height: ' + cellsize + 'px', 'height: ' + cellsize + 'px']);
-    addCssRule(style, '.lr, .rr', ['animation: traslatelr ' + animationspeed/multiplierSize + 's linear 0s infinite normal']);
-    addCssRule(style, '.rl, .ll', ['animation: traslaterl ' + animationspeed/multiplierSize + 's linear 0s infinite normal']);
-    addCssRule(style, '.tb, .bb', ['animation: traslatetb ' + animationspeed/multiplierSize + 's linear 0s infinite normal']);
-    addCssRule(style, '.bt, .tt', ['animation: traslatebt ' + animationspeed/multiplierSize + 's linear 0s infinite normal']);
+    addCssRule(style, 'td', {minWidth: cellsize + 'px', minHeight: cellsize + 'px', maxWidth: cellsize + 'px', maxHeight: cellsize + 'px', flexGrow: '0'});
+    addCssRule(style, 'tr', {minHeight: cellsize + 'px', maxHeight: cellsize + 'px', height: cellsize + 'px'});
+    addCssRule(style, '.lr, .rr', {animation: 'traslatelr ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
+    addCssRule(style, '.rl, .ll', {animation: 'traslaterl ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
+    addCssRule(style, '.tb, .bb', {animation: 'traslatetb ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
+    addCssRule(style, '.bt, .tt', {animation: 'traslatebt ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
     document.body.setAttribute('playing', '0');
-    addCssRule(style, 'body[playing="1"] .hideonplay', ['display: none']);
-    addCssRule(style, 'body[playing="0"] .showonplay', ['display: none']);
+    addCssRule(style, 'body[playing="1"] .hideonplay', {display: 'none'});
+    addCssRule(style, 'body[playing="0"] .showonplay', {display: 'none'});
 
-    addCssRule(style, '.top', ['margin-top: 0']);
-    addCssRule(style, '.bottom', ['margin-bottom: 0']);
-    addCssRule(style, '.left', ['margin-left: 0']);
-    addCssRule(style, '.right', ['margin-right: 0']);
-    addCssRule(style, 'td', ['display: flex']);
+    addCssRule(style, '.top', {marginTop: '0'});
+    addCssRule(style, '.bottom', {marginBottom: '0'});
+    addCssRule(style, '.left', {marginLeft: '0'});
+    addCssRule(style, '.right', {marginRight: '0'});
+    addCssRule(style, 'td', {display: 'flex'});
 /*
     addCssRule(style, 'td', ['position: relative']);
     addCssRule(style, '.top, .left, .bottom, .right', ['width: 300%', 'position: absolute', 'left: calc(-100% + 2px);', 'top:calc(50% - 2px)']);*/
@@ -298,10 +332,10 @@ function htmlMaker() {
 
     var [wrapper, startStopInput, startLabel] = makeInputWithLabel('button', null, null, 'Play');
     options.appendChild(wrapper);
-
+/*
     var {wrapper, input} = makeControlWithLabel('button', 'Options');
     input.addEventListener('click', () => { game.pause(); options.style.display = 'block'; } );
-    options.appendChild(wrapper);
+    options.appendChild(wrapper);*/
 
     function changeBoardSize() { // closure on variables
         while (table.firstElementChild) table.removeChild(table.firstElementChild);
@@ -327,6 +361,7 @@ function htmlMaker() {
         addCssRule(style, 'body', {'--game-speed': speedInput.value});
         if (game.isRunning()) game.speedChanged();
     });
+    wrapper.classList.add('hideonplay');
     options.appendChild(wrapper);
 
     let widthInput, heightInput;
@@ -385,7 +420,7 @@ function htmlMaker() {
         options.appendChild(wrapper);
     }
 
-    startStopInput.addEventListener('click', () => {
+    function togglePlay() {
         if (game.isRunning()) {
             startLabel.innerText = 'Play';
             // pauseWrapper.style.display = 'none';
@@ -397,7 +432,10 @@ function htmlMaker() {
             // pauseWrapper.style.display = 'block';
             game.start(table, new Position(+widthInput.value, +heightInput.value), speedInput, +timeOverInput.value, timeOverOutput, +scoreInput.value, scoreOutput, spawnChanceInput, spawnables);
         }
-    });
+    }
+
+    gameendconfirm.addEventListener('click', togglePlay);
+    startStopInput.addEventListener('click', togglePlay);
 }
 
 function makeControlWithLabel(maintype = 'input', labelText= '') {
@@ -422,12 +460,15 @@ function makeInputWithLabel(maintype = 'input', subtype= 'text', value = '', lab
 function onDocumentReady() {
     window.document.body.addEventListener('keydown', (evt) => {
         if (!game.isRunning() || game.snake.forcedMovement) return;
+        let direction;
         switch (evt.key) {
-            case 'ArrowUp': game.snake.head.nextDirection = 'top'; break;
-            case 'ArrowDown': game.snake.head.nextDirection = 'bottom'; break;
-            case 'ArrowLeft': game.snake.head.nextDirection = 'left'; break;
-            case 'ArrowRight': game.snake.head.nextDirection = 'right'; break;
+            case 'ArrowUp': direction = 'top'; break;
+            case 'ArrowDown': direction = 'bottom'; break;
+            case 'ArrowLeft': direction = 'left'; break;
+            case 'ArrowRight': direction = 'right'; break;
         }
+        if (!game.snake.isValidMovement(direction)) return; // cannot flip backward unless size <= 2
+        game.snake.head.nextDirection = direction;
         // game.snake.head.nextDirection = game.nextMovement;
         game.snake.head.updateHtml();
     });
@@ -595,20 +636,20 @@ function Game(){
     this.gameOver = function(reason){
         console.error('game over');
         const blackscreen = document.querySelector('#blackscreen');
-        blackscreen.classList.add('won');
-        blackscreen.classList.remove('lost');
+        blackscreen.classList.remove('won');
+        blackscreen.classList.add('lost');
         const image = blackscreen.querySelector('img');
         image.src = 'images/game-end/lost-' + reason;
         const text = blackscreen.querySelector('h1');
-        text.innerHTML = "Victory!";
+        text.innerHTML = "Game over";
         this.stop();
     };
 
     this.gameWin = function(counter = 1){
         console.error('game win');
         const blackscreen = document.querySelector('#blackscreen');
-        blackscreen.classList.add('lost');
-        blackscreen.classList.remove('won');
+        blackscreen.classList.remove('lost');
+        blackscreen.classList.add('won');
         const image = blackscreen.querySelector('img');
         image.src = 'images/game-end/won-' + counter + '.jpg';
         const text = blackscreen.querySelector('h1');
@@ -633,7 +674,7 @@ function Game(){
     const gameOverTimer = (timer) => {
         const timeleft = this.timeUntilEnd_Original - timer.executionCount;
         this.timeOverSpinner.setValue(timeleft);
-        if (timeleft === 0) return this.gameOver();
+        if (timeleft === 0) return this.gameOver('timer.png');
     }
 
     const moveTimerOnOff = () => {
@@ -690,13 +731,18 @@ function Game(){
         this.speedChanged();
         this.snake = new Snake(this);
         // manually spawn first fruit
-        Positionable.spawnIfPossible(Fruit);
+        // Positionable.spawnIfPossible(Fruit);
+        new Fruit( new Position(
+            Math.floor(this.table.rows[0].cells.length / 2 + 1), // la board ha per forza almeno 2 righe
+            Math.floor(this.table.rows.length / 2)) );
+        this.score -= Fruit.score;
         console.log('game start() boardSize:', this.boardSize, this.boardSize.multiply(0.5));
         this.timeouts.push(new MyTimeout(moveTimerOnOff, this.gameSpeed/4 * 1000, true, 0));
         this.timeouts.push(new MyTimeout(gameOverTimer, 1000, true, 0));
         this.isrunning = true;
         this.ispaused = false;
         document.body.setAttribute('playing', "1");
+        document.querySelector('#blackscreen').classList.remove('won', 'lost');
 
     };
 }
@@ -946,6 +992,10 @@ function Snake(game){
     this.tail.prevDirection = 'left';
     this.forcedMovement = null; // by traps
 
+    this.isValidMovement = function (directionStr) {
+        // se lunghezza 1, oppure se lunghezza 2, oppure se NON sta tentando una inversione ad U su se stesso.
+        return !this.head.prev || /*this.head.prev === this.tail ||*/ this.head.prev.getRelativePosition(game.snake.head) !== directionStr; };
+
     this.reverse = function(){
         let current = this.head, tmp, arr = [],
             headDirections = {prev: this.head.prevDirection, next: this.head.nextDirection},
@@ -995,7 +1045,7 @@ function Snake(game){
             let tmp = tail.next;
             tail.remove();
             tail = tmp;
-            if (!tail) { this.game.gameOver(); return; }
+            if (!tail) { this.game.gameOver('trap.jpg'); return; }
         }
         tail.prev = null;
         this.tail = tail;
@@ -1067,11 +1117,13 @@ function Snake(game){
                     this.moveForward(nextPosition);
                     this.cutTail(1);
                     break; }
-            // fall-through tra case volontario: se "mangio" la coda che sto per tagliare non è un problema, se mangio un segmento è game over
+                this.moveForward(nextPosition);
+                this.game.gameOver('cannibalism.jpg');
+                break;
             case Deadly.name:
                 // cellOldContent.remove();
                 this.moveForward(nextPosition);
-                this.game.gameOver();
+                this.game.gameOver('deadly.png');
                 break;
             case Fruit.name:
                 cellOldContent.remove();
