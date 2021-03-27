@@ -78,7 +78,6 @@ function GuiSpinner() {
         const o = this.options;
         let perc = +(value0-o.min)/(o.max-o.min);
         perc = Math.min(1, Math.max(0, o.reverseFill ? perc : 1 - perc));
-        /// todo: instanceof
         const digits = 10 ** o.digits; // equals to Math.pow(10, o.digits);
         const val = value0.toFixed(o.digits) // or Math.floor(value0 * digits) / digits;
         const R = Math.floor((1-perc)*o.startRGB.r + (perc)*o.endRGB.r);
@@ -318,14 +317,13 @@ function htmlMaker() {
 
      // fill controls
     var [pauseWrapper, input, pauseLabel] = makeInputWithLabel('button', null, null, 'Pause');
-    // todo: arrow func vs "function"
     input.addEventListener('click', () => {
-        if (game.isPaused()) {
+        if (Game.get().isPaused()) {
             pauseLabel.innerText = 'Resume';
-            game.resume();
+            Game.get().resume();
         } else {
             pauseLabel.innerText = 'Pause';
-            game.pause();
+            Game.get().pause();
         } });
     pauseWrapper.classList.add('showonplay');
     options.appendChild(pauseWrapper);
@@ -339,6 +337,7 @@ function htmlMaker() {
 
     function changeBoardSize() { // closure on variables
         while (table.firstElementChild) table.removeChild(table.firstElementChild);
+        Game.get().clean();
         console.log('changeboardsize', heightInput.value, widthInput.value, table);
         for (let i = 0 ; i < +heightInput.value; i++) {
             const row = document.createElement('tr');
@@ -353,15 +352,15 @@ function htmlMaker() {
     // fill options
     var [wrapper, speedInput] = makeInputWithLabel('input', 'range', animationspeed, 'Turn length');
     speedInput.min = '' + 0.001;
-    speedInput.max = '' + 10; // imposta anche automaticamente width dell'elemento
+    speedInput.max = '' + 5; // imposta anche automaticamente width dell'elemento
     speedInput.step = 'any';
     speedInput.addEventListener('change', () => {
         // todo: dovrei cancellare la vecchia regola anche se non è strettamente necessario perchè si sovrascrive
         // todo 2: usa var(--game-speed) al posto di numeri hardcoded nel css
         addCssRule(style, 'body', {'--game-speed': speedInput.value});
-        if (game.isRunning()) game.speedChanged();
+        if (Game.get().isRunning()) Game.get().speedChanged();
     });
-    wrapper.classList.add('hideonplay');
+    // wrapper.classList.add('hideonplay');
     options.appendChild(wrapper);
 
     let widthInput, heightInput;
@@ -421,6 +420,7 @@ function htmlMaker() {
     }
 
     function togglePlay() {
+        const game = Game.get();
         if (game.isRunning()) {
             startLabel.innerText = 'Play';
             // pauseWrapper.style.display = 'none';
@@ -459,6 +459,7 @@ function makeInputWithLabel(maintype = 'input', subtype= 'text', value = '', lab
 // todo: vedi se trovi un uso per hasOwnProperty da qualche parte
 function onDocumentReady() {
     window.document.body.addEventListener('keydown', (evt) => {
+        const game = Game.get();
         if (!game.isRunning() || game.snake.forcedMovement) return;
         let direction;
         switch (evt.key) {
@@ -477,7 +478,7 @@ function onDocumentReady() {
 
 // eseguiti prima di onDocumentReady, sono riuniti ed organizzati per un fatto di ordine, la funzione non è necessaria.
 (function onScriptReading() {
-    window.game = new Game(); // todo: NOPE non usarla come var globale, Game.getGame()?
+    Game.get = () => Game.game || (Game.game = new Game());
     Fruit.dictionary = ["apple", "apricot", "avocado", "bananas", "beetroot", "bell-pepper", "berry", "blueberry",
         "broccoli", "capsicum", "carrot", "cauliflower", "corn", "dragon-fruit", "eggplant1", "eggplant2", "garlic",
         "lemon", "mango", "okra", "orange", "papaya", "pear", "pomegranate", "pumpkin", "rose-apple", "strawberry", "tomato", "watermelon"];
@@ -500,6 +501,7 @@ function onDocumentReady() {
         = Fruit.findSpawnablePositions
         = function () {
         const positions = [];
+        const game = Game.get();
         for (let y = 0; y < game.table.rows.length; y++) {
             for (let x = 0; x < game.table.rows[y].cells.length; x++) {
                 if (game.table.rows[y].cells[x].dataset.isFilledWith) continue;
@@ -527,20 +529,13 @@ function onDocumentReady() {
     // equivalente a this.getCellHtml interno al costruttore Positionable, ma setta la funzione solo su questa istanza.
     positionableInstance.getCellHtml = function() {
         if (!this.position) return null;
-        return game.table.rows[this.position.y].cells[this.position.x];
+        return Game.get().table.rows[this.position.y].cells[this.position.x];
     };
     for (let Subclass of subclasses) {
         makeItExtend(Subclass, Positionable, positionableInstance);
         // da questo punto non ho più necessità di modificare o estendere i loro prototipi.
         Subclass.prototype = Object.freeze(Subclass.prototype);
     }
-    // nb: Fruit.prototype = positionableInstance;
-    // todo:
-    // è: new Fruit() -> __proto__ (una istanza di positionableInstance?) --> proto (positionableInstance?)
-
-
-    // dovrebbe essere: Fruit() -> --> __proto__ il singleton di Positionable --> object
-    // if (Fruit.prototype !== positionableInstance) { alert ('yes, needs to be solved'); } else alert ('not executed');
 
     document.addEventListener('DOMContentLoaded', onDocumentReady, false);
 })(); // dichiarazione ed esecuzione immediata
@@ -571,6 +566,7 @@ function MyTimeout(action, time, repeat = false, firstTimer = null){
       action(this);
   }
 
+  this.isPaused = true;
   this.cancel = function() {
       // (repeat ? setInterval : setTimeout)(this.timerID);
       clearTimeout(this.timerID);
@@ -579,13 +575,25 @@ function MyTimeout(action, time, repeat = false, firstTimer = null){
   this.pause = function() {
       //(repeat ? clearInterval : clearTimeout)(this.timerID);
       clearTimeout(this.timerID);
+      this.isPaused = true;
       this.timeLeft = Math.max(0, this.timeEnd - new Date().getTime());
   }
   this.resume = function() {
       this.timeEnd = new Date().getTime() + this.timeLeft;
       // this.timerID = (repeat ? setInterval : setTimeout)(actionAugmented, this.timeLeft);
       this.timerID = setTimeout(actionAugmented, this.timeLeft);
+      this.isPaused = false;
   }
+  this.changeTimer = function(newTimer) {
+      const wasPaused = this.isPaused;
+      const oldTimer = this.initialTime; // low is fast
+      this.initialTime = newTimer;
+      let changePercent = newTimer / oldTimer;
+      this.pause();
+      this.timeLeft *= changePercent;
+      if (!wasPaused) this.resume();
+  }
+
   this.resume();
 }
 
@@ -601,6 +609,7 @@ function Game(){
     this.timeUntilEnd = null;
     this.timeOverSpinner = null;
     this.scoreSpinner = null;
+    this.turnTimer = null;
     this.getCellHtml = function(position) { return this.table.rows[position.y].cells[position.x]; };
     this.getCellContent = function(position) { return Positionable.getByCell(this.getCellHtml(position)); };
 
@@ -664,7 +673,7 @@ function Game(){
 
     this.speedChanged = function(){
         this.gameSpeed = +this.speedInput.value;
-        // todo: aggiusta i timer
+        this.turnTimer?.changeTimer( this.gameSpeed/4 * 1000 );
     };
 
     let timerClosureParams = {
@@ -737,7 +746,7 @@ function Game(){
             Math.floor(this.table.rows.length / 2)) );
         this.score -= Fruit.score;
         console.log('game start() boardSize:', this.boardSize, this.boardSize.multiply(0.5));
-        this.timeouts.push(new MyTimeout(moveTimerOnOff, this.gameSpeed/4 * 1000, true, 0));
+        this.timeouts.push(this.turnTimer = new MyTimeout(moveTimerOnOff, this.gameSpeed/4 * 1000, true, 0));
         this.timeouts.push(new MyTimeout(gameOverTimer, 1000, true, 0));
         this.isrunning = true;
         this.ispaused = false;
@@ -746,6 +755,7 @@ function Game(){
 
     };
 }
+
 
 function Position(x, y) {
     this.x = +x;
@@ -815,21 +825,21 @@ function Positionable () {
         const cell = this.getCellHtml();
         if (cell) cell.dataset.isFilledWith = this.id;
     }
-// todo: webpack
+
     this.turnPassed = function() {
         // permetto volontariamente agli item che iniziano con valori < 0 di rimanere per sempre
-        // todo: ri-abilita
-    //    if (--this.expiringTurnLeft === 0 ) this.remove();
+        if (--this.expiringTurnLeft === 0 ) this.remove();
     }
 
     this.remove = function () {
-        const container = this.getCellHtml();
+        const container = this.html?.parentElement
+        delete Positionable.mapByID[this.id];
+        if (!container) return;
         delete container.dataset.isFilledWith;
         // delete su datase non funziona su safari, per compatibilità uso anche removeAttribute
         container.removeAttribute('data-is-filled-with');
         // while (container.firstChild) { container.remove(container.firstChild); }
         container.removeChild(this.html);
-        delete Positionable.mapByID[this.id];
     }
 
 
@@ -849,7 +859,7 @@ function Fruit(position, kind = null) {
     this.init(...arguments);
     this.sizeIncrease = 1;
     // $ type check, anche se qui si poteva anche usare !isNaN()
-    this.expiringTurnLeft = 10; // scade dopo X turni
+    this.expiringTurnLeft = 15; // scade dopo X turni
 
     this.html = document.createElement('img');
     this.html.src = "images/positionable/fruits/" + Fruit.dictionary[this.kind] + ".png";
@@ -859,7 +869,7 @@ function Fruit(position, kind = null) {
 function Deadly(position, kind = null) {
     this.init(...arguments);
     this.sizeIncrease = Number.MIN_SAFE_INTEGER;
-    this.expiringTurnLeft = 15; // scade dopo X turni
+    this.expiringTurnLeft = 18; // scade dopo X turni
 
     this.html = document.createElement('img');
     this.html.src = "images/positionable/deadly-" + (this.kind + 1) + ".png";
@@ -900,8 +910,6 @@ function Poison(position) { merged with bomb into deadly
 // Deadly.prototype = Object.create(Eatable.prototype) vs new Eatable ?
 function makeItExtend(FunctionSubClass1, FunctionSuperClass, superClassInstance = null) {
     // OR settare il prototype di Positionable.prototype.function = something
-    // todo: perchè sia prototype che proto?
-    // todo: seal the prototype sarebbe una cosa figa! o freeze
     FunctionSubClass1.prototype.__proto__ = superClassInstance || new FunctionSuperClass(); // new FunctionSuperClass();      // es: Trap "estende" Positionable eretidando attraverso il prototype.
     // FunctionSubClass1.prototype.constructor = FunctionSubClass1; // e poi riassegna il costruttore.
 }
@@ -933,6 +941,7 @@ function SnakeSegment(position) {
     }
 
     this.getRelativePosition = (segment) => {
+        const game = Game.get();
         // check di overflow
         if (this.position.x === game.boardSize.x - 1 && segment.position.x === 0) return 'left';
         if (this.position.x === 0 && segment.position.x === game.boardSize.x - 1) return 'right';
@@ -1140,7 +1149,7 @@ function Snake(game){
                 this.moveForward(nextPosition);
                 this.cutTail(1);
                 const reverse = Math.random() < 0.5;
-                // if (reverse) { this.reverse(); break; }
+                if (reverse) { this.reverse(); break; }
                 let possibleDirections = this.findPossibleMovements();
                 let i = Math.floor(Math.random() * possibleDirections.length);
                 let nextDirection = possibleDirections[i];
