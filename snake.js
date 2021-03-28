@@ -103,7 +103,6 @@ function htmlMaker() {
     const blackScreen = document.createElement('div');
     blackScreen.id = "blackscreen";
     gameSection.id = "game";
-    table.style.flexGrow = '9';
     document.body.appendChild(style);
     document.body.appendChild(options);
     options.style.margin = '10px 0';
@@ -137,6 +136,7 @@ function htmlMaker() {
     let size = 10;
     let multiplierSize = 4;
     let animationspeed = 2;
+    let as_var = "var(--game-speed)";
     function SpawnableChance(constructor, chance){
         this.constructorReference = constructor;
         this.name = constructor.name.replace(/([A-Z]+)/g, ' $1').trim(); // aggiunge spazi prima delle maiuscole
@@ -159,7 +159,7 @@ function htmlMaker() {
 
     addCssRule(style, '#game .left-bar, #game .right-bar', {flexGrow: '1', flexBasis: '0px', padding: '30px', height: '100%'});
     addCssRule(style, '.tableWrapper', {display: 'flex', flexGrow: '0', height: '100%', flexFlow: 'column'});
-    addCssRule(style, 'table', {width: 'auto', height: '100%', background: 'black', tableLayout: 'fixed', margin: 'auto'});
+    addCssRule(style, 'table', {width: 'auto', background: 'black', tableLayout: 'fixed', margin: 'auto'});
 
     addCssRule(style, 'table', {background: 'white', display: 'flex', flexFlow: 'column'});
     addCssRule(style, 'tr', {flexBasis: '0', flexGrow: '1', display: 'flex', flexFlow: 'row', height: '0'});
@@ -170,6 +170,29 @@ function htmlMaker() {
 
     addCssRule(style, 'body', {width: '100vw', height: '100vh', display: 'flex', flexFlow: 'column',
         flexWrap: 'nowrap', padding: '0', margin: '0', border: 'solid transparent', borderWidth: '0px 10px'});
+    addCssRule(style, 'button', {
+        fontFamily: "'VT323', monospace",
+        background: '#7C7C7C',
+        borderBottom: '6px inset rgba(0,0,0,.5)',
+        borderLeft: '6px inset rgba(0,0,0,.5)',
+        borderRight: '6px inset rgba(255,255,255,.5)',
+        borderTop: '6px inset rgba(255,255,255,.5)',
+        color: 'white',
+        cursor: 'pointer',
+        display: 'inline-block',
+        fontSize: '1.3rem',
+        // margin: '1rem',
+        minWidth: '200px',
+        padding: '.3rem',
+        textTransform: 'uppercase',
+        width: 'auto'
+    });
+    addCssRule(style, '.danger', {background: '#881400'});
+    addCssRule(style, '.danger:hover', {background: '#A81000', outline: 'none'});
+    addCssRule(style, '.success', {background: '#005800'});
+    addCssRule(style, '.success:hover', {background: '#006800', outline: 'none'});
+    addCssRule(style, '.muted', {background: '#7C7C7C'});
+    addCssRule(style, '.muted:hover', {background: '#BCBCBC', outline: 'none'});
 
     addCssRule(style, '.top, .left, .bottom, .right', {display: 'flex', border: '0px solid red',
         borderimage: 'url(http://i.stack.imgur.com/wLdVc.png) 2 round', height: '100%', width: '100%', margin: 'auto'});
@@ -248,9 +271,9 @@ function htmlMaker() {
     addCssRule(style, '.top.left, .top.right', {top: 'calc(-100% + ' + size + 'px - 1.15px)'}); // 0.65 = 0.5 cell border + unknown addition
     addCssRule(style, '.bottom.left, .bottom.right', {top: 'calc(50% - ' + size/2 + 'px)'});
     addCssRule(style, '.lb, .tl, .rt, .br', // clockwise angoli interni
-        {animation: 'rotateclock ' + animationspeed + 's linear 0s infinite normal'}); // rotazione per match colori or: 'scaleX(-1)
+        {animation: 'rotateclock ' + as_var + ' linear 0s infinite normal'}); // rotazione per match colori or: 'scaleX(-1)
     addCssRule(style, '.lt, .tr, .rb, .bl', // .top.left, .bottom.right,
-{animation: 'rotateclock ' + animationspeed + 's linear 0s infinite reverse'}); // rotazione per match colori or: 'scaleX(-1)
+{animation: 'rotateclock ' + as_var + ' linear 0s infinite reverse'}); // rotazione per match colori or: 'scaleX(-1)
     // edges
     addCssRule(style, '.left.right, .rr, .ll', {width: '400%', height: size + 'px', top: 'calc(50% - ' + size/2 + 'px)', left: 'calc(-150% + ' + size*3/4 + 'px)',
     background: 'repeating-linear-gradient(90deg, black, black ' + (100 / multiplierSize / 2) + '%, red ' + (100 / multiplierSize / 2) + '%, red ' + 100 / multiplierSize + '%)'});
@@ -261,10 +284,10 @@ function htmlMaker() {
     const cellsize = size * 3;
     addCssRule(style, 'td', {minWidth: cellsize + 'px', minHeight: cellsize + 'px', maxWidth: cellsize + 'px', maxHeight: cellsize + 'px', flexGrow: '0'});
     addCssRule(style, 'tr', {minHeight: cellsize + 'px', maxHeight: cellsize + 'px', height: cellsize + 'px'});
-    addCssRule(style, '.lr, .rr', {animation: 'traslatelr ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
-    addCssRule(style, '.rl, .ll', {animation: 'traslaterl ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
-    addCssRule(style, '.tb, .bb', {animation: 'traslatetb ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
-    addCssRule(style, '.bt, .tt', {animation: 'traslatebt ' + animationspeed/multiplierSize + 's linear 0s infinite normal'});
+    addCssRule(style, '.lr, .rr', {animation: 'traslatelr calc(' + as_var + " / " + multiplierSize + ') linear 0s infinite normal'});
+    addCssRule(style, '.rl, .ll', {animation: 'traslaterl calc(' + as_var + " / " + multiplierSize + ') linear 0s infinite normal'});
+    addCssRule(style, '.tb, .bb', {animation: 'traslatetb calc(' + as_var + " / " + multiplierSize + ') linear 0s infinite normal'});
+    addCssRule(style, '.bt, .tt', {animation: 'traslatebt calc(' + as_var + " / " + multiplierSize + ') linear 0s infinite normal'});
     document.body.setAttribute('playing', '0');
     addCssRule(style, 'body[playing="1"] .hideonplay', {display: 'none'});
     addCssRule(style, 'body[playing="0"] .showonplay', {display: 'none'});
@@ -316,19 +339,28 @@ function htmlMaker() {
     // angoli normali
 
      // fill controls
-    var [pauseWrapper, input, pauseLabel] = makeInputWithLabel('button', null, null, 'Pause');
-    input.addEventListener('click', () => {
+    var [pauseWrapper, pauseButton, pauseLabel] = makeInputWithLabel('button', null, null, 'Pause');
+    pauseButton.innerText = pauseLabel.innerText;
+    pauseLabel.parentElement.removeChild(pauseLabel);
+    pauseLabel = pauseButton; // fast trick perchè abbandono la label e metto tutto nel pulsante.
+    pauseButton.addEventListener('click', () => {
         if (Game.get().isPaused()) {
-            pauseLabel.innerText = 'Resume';
+            pauseLabel.innerText = 'Pause';
+            pauseButton.setAttribute('class', 'muted'); // non uso classList perchè voglio svuotarlo
             Game.get().resume();
         } else {
-            pauseLabel.innerText = 'Pause';
+            pauseLabel.innerText = 'Resume';
+            pauseButton.setAttribute('class', 'success');
             Game.get().pause();
         } });
     pauseWrapper.classList.add('showonplay');
     options.appendChild(pauseWrapper);
 
-    var [wrapper, startStopInput, startLabel] = makeInputWithLabel('button', null, null, 'Play');
+    var [wrapper, startStopButton, startLabel] = makeInputWithLabel('button', null, null, 'Play');
+    startStopButton.innerText = startLabel.innerText;
+    startStopButton.classList.add('success');
+    startLabel.parentElement.removeChild(startLabel);
+    startLabel = startStopButton; // fast trick perchè abbandono la label e metto tutto nel pulsante.
     options.appendChild(wrapper);
 /*
     var {wrapper, input} = makeControlWithLabel('button', 'Options');
@@ -354,10 +386,11 @@ function htmlMaker() {
     speedInput.min = '' + 0.001;
     speedInput.max = '' + 5; // imposta anche automaticamente width dell'elemento
     speedInput.step = 'any';
+    addCssRule(style, 'body', {'--game-speed': speedInput.value + "s"});
     speedInput.addEventListener('change', () => {
         // todo: dovrei cancellare la vecchia regola anche se non è strettamente necessario perchè si sovrascrive
         // todo 2: usa var(--game-speed) al posto di numeri hardcoded nel css
-        addCssRule(style, 'body', {'--game-speed': speedInput.value});
+        addCssRule(style, 'body', {'--game-speed': speedInput.value + "s"});
         if (Game.get().isRunning()) Game.get().speedChanged();
     });
     // wrapper.classList.add('hideonplay');
@@ -424,18 +457,21 @@ function htmlMaker() {
         if (game.isRunning()) {
             startLabel.innerText = 'Play';
             // pauseWrapper.style.display = 'none';
+            startStopButton.setAttribute('class', 'success');
             game.stop();
         }
         else {
             startLabel.innerText = 'Stop';
             pauseLabel.innerText = 'Pause';
+            pauseButton.setAttribute('class', 'muted');
+            startStopButton.setAttribute('class', 'danger');
             // pauseWrapper.style.display = 'block';
             game.start(table, new Position(+widthInput.value, +heightInput.value), speedInput, +timeOverInput.value, timeOverOutput, +scoreInput.value, scoreOutput, spawnChanceInput, spawnables);
         }
     }
 
     gameendconfirm.addEventListener('click', togglePlay);
-    startStopInput.addEventListener('click', togglePlay);
+    startStopButton.addEventListener('click', togglePlay);
 }
 
 function makeControlWithLabel(maintype = 'input', labelText= '') {
