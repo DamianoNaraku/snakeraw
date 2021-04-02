@@ -20,14 +20,12 @@ function addCssRule(styleNode, selector = 'body', rules = {}, index = -1) {
         return '\n    ' + kv[0] + ': ' + kv[1] + ";";
     }).join('; ');
 
-    // const cssElem: HTMLStyleElement = CSSEditor.getCustomCssElement($templateRoot, context, false);
     const rawRule = '' + selector + ' {' + rules_str + '\n}\n\n';
     if (index < 0 || !index && (index !== 0)) index = styleNode.sheet.rules.length;
     console.warn('adding rule:', rawRule);
     styleNode.sheet.insertRule(rawRule, index);
 }
 function addCssRule0(styleNode, selector = 'body', rules = [], index = -1) {
-    // const cssElem: HTMLStyleElement = CSSEditor.getCustomCssElement($templateRoot, context, false);
     const rawRule = '' + selector + ' {\n' + rules.join(';\n   ') + '}\n\n';
     if (index < 0 || !index && (index !== 0)) index = styleNode.sheet.rules.length;
     styleNode.sheet.insertRule(rawRule, index);
@@ -160,7 +158,6 @@ function htmlMaker() {
     addCssRule(style, '#game .left-bar, #game .right-bar', {flexGrow: '1', flexBasis: '0px', padding: '30px', height: '100%'});
     addCssRule(style, '.tableWrapper', {display: 'flex', flexGrow: '0', height: '100%', flexFlow: 'column'});
     addCssRule(style, 'table', {width: 'auto', background: 'black', tableLayout: 'fixed', margin: 'auto'});
-
     addCssRule(style, 'table', {background: 'white', display: 'flex', flexFlow: 'column'});
     addCssRule(style, 'tr', {flexBasis: '0', flexGrow: '1', display: 'flex', flexFlow: 'row', height: '0'});
     addCssRule(style, 'td', {flexBasis: '0', flexGrow: '1', border: '0.5px solid black', overflow: 'hidden', padding: '0'});
@@ -389,7 +386,6 @@ function htmlMaker() {
     addCssRule(style, 'body', {'--game-speed': speedInput.value + "s"});
     speedInput.addEventListener('change', () => {
         // todo: dovrei cancellare la vecchia regola anche se non è strettamente necessario perchè si sovrascrive
-        // todo 2: usa var(--game-speed) al posto di numeri hardcoded nel css
         addCssRule(style, 'body', {'--game-speed': speedInput.value + "s"});
         if (Game.get().isRunning()) Game.get().speedChanged();
     });
@@ -492,7 +488,6 @@ function makeInputWithLabel(maintype = 'input', subtype= 'text', value = '', lab
     return [wrapper, input, label];
 }
 
-// todo: vedi se trovi un uso per hasOwnProperty da qualche parte
 function onDocumentReady() {
     window.document.body.addEventListener('keydown', (evt) => {
         const game = Game.get();
@@ -854,6 +849,7 @@ function Positionable () {
     this.init = function(position, kind) {
         this.position = position || new Position();
         const kindCounter = this.constructor.dictionary?.length ?? this.constructor.kindCounter ?? 1;
+        // $ type check, anche se qui si poteva anche usare !isNaN()
         this.kind = typeof kind === 'number' ? kind : Math.floor(Math.random() * kindCounter); // mela, pera... enumeratore.
         this.expiringTurnLeft = -1; // it does not expire by default
         // se position è undefined lo sto creando per usarlo come prototype e non lo considero.
@@ -894,7 +890,6 @@ function Eatable(position) {
 function Fruit(position, kind = null) {
     this.init(...arguments);
     this.sizeIncrease = 1;
-    // $ type check, anche se qui si poteva anche usare !isNaN()
     this.expiringTurnLeft = 15; // scade dopo X turni
 
     this.html = document.createElement('img');
@@ -946,8 +941,10 @@ function Poison(position) { merged with bomb into deadly
 // Deadly.prototype = Object.create(Eatable.prototype) vs new Eatable ?
 function makeItExtend(FunctionSubClass1, FunctionSuperClass, superClassInstance = null) {
     // OR settare il prototype di Positionable.prototype.function = something
-    FunctionSubClass1.prototype.__proto__ = superClassInstance || new FunctionSuperClass(); // new FunctionSuperClass();      // es: Trap "estende" Positionable eretidando attraverso il prototype.
-    // FunctionSubClass1.prototype.constructor = FunctionSubClass1; // e poi riassegna il costruttore.
+    FunctionSubClass1.prototype = {
+        pointsWhenEaten: 0,
+        __proto__: superClassInstance || new FunctionSuperClass()}; // new FunctionSuperClass();      // es: Trap "estende" Positionable eretidando attraverso il prototype.
+    FunctionSubClass1.prototype.constructor = FunctionSubClass1; // e poi riassegna il costruttore.
 }
 
 function SnakeSegment(position) {
@@ -1012,7 +1009,7 @@ function SnakeSegment(position) {
     }
     this.updateHtml();
 
-    // override di Positionable.remove() $$$
+    // override di Positionable.remove() $
     this.remove = function () {
         this.__proto__.__proto__.remove.call(this); // emula call "super" Positionable.remove()
         // totalmente inutile ma volevo fare un override
